@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "DBD Skill Check Simulator",
+  "version": "0.1.0",
+  "identifier": "com.kasrajamei.dbdskillchecksimulator",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build:web",
+    "devUrl": "http://localhost:1420",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "DBD Skill Check Simulator",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "appimage"],
+    "category": "Game",
+    "shortDescription": "Skill check timing simulator",
+    "longDescription": "A timing-focused Dead by Daylight style skill check simulator for web and desktop.",
+    "copyright": "",
+    "license": "MIT",
+    "createUpdaterArtifacts": false,
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      }
+    },
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "perMachine"
+      }
+    }
+  }
+}
