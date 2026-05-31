@@ -63,26 +63,3 @@ Tauri bundles are emitted under `src-tauri/target/release/bundle`.
 - `src/utils` contains math, formatting, and input helpers
 
 React renders controls and stats only. The active timing ring is drawn directly to Canvas, updated with delta time, and hit-tested on keydown timestamps.
-
-## CI/CD
-
-The repository includes:
-
-- `.github/workflows/build-check.yml` for install, typecheck, lint, and web build
-- `.github/workflows/desktop-build.yml` for Windows NSIS and Linux AppImage desktop artifacts
-- `.github/workflows/release.yml` for automatic `vX.Y.Z` tags, release notes, and GitHub Release artifact uploads
-
-The release workflow reads `package.json` version, creates a matching tag if one does not already exist, builds desktop artifacts, and publishes them to GitHub Releases.
-
-## GitHub Repository
-
-If the GitHub CLI is authenticated:
-
-```bash
-git init
-git add .
-git commit -m "Initial DBD skill check simulator"
-gh repo create dbd-skill-check-simulator --private --source=. --remote=origin --push
-```
-
-Change `--private` to `--public` if you want a public repository.
