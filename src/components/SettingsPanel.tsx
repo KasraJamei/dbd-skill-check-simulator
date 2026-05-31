@@ -1,4 +1,4 @@
-import { Keyboard, RotateCcw, SlidersHorizontal, Volume2 } from 'lucide-react'
+import { Eye, Keyboard, RotateCcw, SlidersHorizontal } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { keybindFromKeyboardEvent } from '../utils/input'
@@ -25,7 +25,7 @@ function SliderControl({
       <span className="flex items-center justify-between">
         <span>{label}</span>
         <span className="font-mono text-xs text-stone-500">
-          {value.toFixed(step < 0.1 ? 2 : 1)}
+          {value.toFixed(Number.isInteger(step) ? 0 : step < 0.1 ? 2 : 1)}
           {suffix}
         </span>
       </span>
@@ -45,7 +45,7 @@ function SliderControl({
 export function SettingsPanel() {
   const settings = useGameStore((state) => state.settings)
   const updateSettings = useGameStore((state) => state.updateSettings)
-  const resetStats = useGameStore((state) => state.resetStats)
+  const resetSettings = useGameStore((state) => state.resetSettings)
   const [listening, setListening] = useState(false)
 
   useEffect(() => {
@@ -73,10 +73,10 @@ export function SettingsPanel() {
         </h2>
         <button
           type="button"
-          onClick={resetStats}
+          onClick={resetSettings}
           className="inline-flex h-9 w-9 items-center justify-center border border-stone-800 bg-stone-900 text-stone-400 transition hover:border-red-500/60 hover:text-red-200"
-          aria-label="Reset stats"
-          title="Reset stats"
+          aria-label="Reset settings"
+          title="Reset settings"
         >
           <RotateCcw size={16} aria-hidden />
         </button>
@@ -109,6 +109,15 @@ export function SettingsPanel() {
           step={0.05}
           onChange={(volume) => updateSettings({ volume })}
         />
+        <SliderControl
+          label="Round timer"
+          value={settings.roundDurationSeconds}
+          min={30}
+          max={180}
+          step={15}
+          onChange={(roundDurationSeconds) => updateSettings({ roundDurationSeconds })}
+          suffix="s"
+        />
 
         <div className="grid gap-2">
           <button
@@ -129,14 +138,15 @@ export function SettingsPanel() {
 
           <label className="flex h-11 items-center justify-between border border-stone-800 bg-stone-900 px-3 text-sm text-stone-300">
             <span className="flex items-center gap-2">
-              <Volume2 size={16} aria-hidden />
-              Visual aids
+              <Eye size={16} aria-hidden />
+              Timing guide
             </span>
             <input
               type="checkbox"
-              checked={settings.visualAids}
-              onChange={(event) => updateSettings({ visualAids: event.target.checked })}
+              checked={settings.timingGuide}
+              onChange={(event) => updateSettings({ timingGuide: event.target.checked })}
               className="h-4 w-4 accent-red-500"
+              title="Shows subtle boundary lines for the success zone"
             />
           </label>
         </div>

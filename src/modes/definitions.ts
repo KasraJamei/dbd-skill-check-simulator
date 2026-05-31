@@ -94,7 +94,11 @@ function resolveDirection(direction: ModeDefinition['direction']): RotationDirec
   return direction
 }
 
-function createZonePair(mode: ModeDefinition, settings: GameSettings): Pick<AttemptConfig, 'successZone' | 'greatZone'> {
+function createZonePair(
+  mode: ModeDefinition,
+  settings: GameSettings,
+  direction: RotationDirection,
+): Pick<AttemptConfig, 'successZone' | 'greatZone'> {
   const successSize = clamp(
     mode.successZoneSize * settings.zoneScale * randomVariance(mode.zoneVariance),
     0.035,
@@ -105,7 +109,10 @@ function createZonePair(mode: ModeDefinition, settings: GameSettings): Pick<Atte
     0.01,
     successSize * 0.5,
   )
-  const successStart = randomBetween(0.18, 0.84)
+  const needleStart = direction === 1 ? 0 : 0.995
+  const entryTravel = randomBetween(0.34, 0.78)
+  const entryAngle = wrapUnit(needleStart + direction * entryTravel)
+  const successStart = direction === 1 ? entryAngle : wrapUnit(entryAngle - successSize)
   const greatInset = randomBetween(successSize * 0.18, successSize - greatSize - successSize * 0.18)
   const successZone: HitZone = {
     start: wrapUnit(successStart),
@@ -126,7 +133,8 @@ export function createAttemptConfig(
   startedAt: number,
 ): AttemptConfig {
   const mode = modeDefinitions[modeId]
-  const { successZone, greatZone } = createZonePair(mode, settings)
+  const direction = resolveDirection(mode.direction)
+  const { successZone, greatZone } = createZonePair(mode, settings, direction)
 
   return {
     attemptId,
@@ -140,9 +148,9 @@ export function createAttemptConfig(
       0.18,
       1.65,
     ),
-    direction: resolveDirection(mode.direction),
+    direction,
     jitterStrength: mode.jitterStrength,
-    visualAids: settings.visualAids || modeId === 'zen',
+    timingGuide: settings.timingGuide || modeId === 'zen',
     scoreMultiplier: mode.scoreMultiplier,
   }
 }

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { modeOrder } from '../modes/definitions'
-import type { AttemptResult, GameSettings, GameStats, ModeId, ModeStats } from '../types/game'
+import type { AttemptResult, GameSettings, GameStats, LeaderboardEntry, ModeId, ModeStats } from '../types/game'
 
 interface GameStore {
   modeId: ModeId
@@ -9,13 +9,21 @@ interface GameStore {
   stats: GameStats
   history: AttemptResult[]
   lastResult: AttemptResult | null
+  isRunning: boolean
+  runStartedAt: number | null
+  elapsedMs: number
+  leaderboard: LeaderboardEntry[]
   setMode: (modeId: ModeId) => void
   updateSettings: (settings: Partial<GameSettings>) => void
   recordAttempt: (result: AttemptResult) => void
+  startRun: () => void
+  stopRun: () => void
+  resetRun: () => void
+  resetSettings: () => void
   resetStats: () => void
 }
 
-const defaultSettings: GameSettings = {
+export const defaultSettings: GameSettings = {
   speedScale: 1,
   zoneScale: 1,
   volume: 0.72,
@@ -23,7 +31,8 @@ const defaultSettings: GameSettings = {
     code: 'Space',
     label: 'Space',
   },
-  visualAids: false,
+  timingGuide: false,
+  roundDurationSeconds: 60,
 }
 
 function createEmptyModeStats(): ModeStats {
@@ -107,6 +116,61 @@ function updateStats(stats: GameStats, result: AttemptResult): GameStats {
   }
 }
 
+function elapsedForState(state: Pick<GameStore, 'elapsedMs' | 'runStartedAt'>) {
+  if (state.runStartedAt === null) {
+    return state.elapsedMs
+  }
+
+  return state.elapsedMs + Date.now() - state.runStartedAt
+}
+
+function createLeaderboardEntry(modeId: ModeId, stats: GameStats, elapsedMs: number): LeaderboardEntry | null {
+  if (stats.attempts === 0) {
+    return null
+  }
+
+  return {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    modeId,
+    score: stats.score,
+    attempts: stats.attempts,
+    greats: stats.greats,
+    successRate: stats.attempts === 0 ? 0 : (stats.successes / stats.attempts) * 100,
+    elapsedMs,
+    createdAt: Date.now(),
+  }
+}
+
+function addLeaderboardEntry(leaderboard: LeaderboardEntry[], entry: LeaderboardEntry | null) {
+  if (!entry) {
+    return leaderboard
+  }
+
+  return [entry, ...leaderboard]
+    .sort((first, second) => {
+      if (second.score !== first.score) {
+        return second.score - first.score
+      }
+
+      if (second.greats !== first.greats) {
+        return second.greats - first.greats
+      }
+
+      return first.elapsedMs - second.elapsedMs
+    })
+    .slice(0, 8)
+}
+
+function resetRunState(isRunning: boolean) {
+  return {
+    stats: createEmptyStats(),
+    history: [],
+    lastResult: null,
+    elapsedMs: 0,
+    runStartedAt: isRunning ? Date.now() : null,
+  }
+}
+
 export const useGameStore = create<GameStore>()(
   persist(
     (set) => ({
@@ -115,6 +179,10 @@ export const useGameStore = create<GameStore>()(
       stats: createEmptyStats(),
       history: [],
       lastResult: null,
+      isRunning: true,
+      runStartedAt: Date.now(),
+      elapsedMs: 0,
+      leaderboard: [],
       setMode: (modeId) => set({ modeId, lastResult: null }),
       updateSettings: (settings) =>
         set((state) => ({
@@ -129,23 +197,67 @@ export const useGameStore = create<GameStore>()(
           history: [result, ...state.history].slice(0, 9),
           lastResult: result,
         })),
-      resetStats: () =>
-        set({
-          stats: createEmptyStats(),
-          history: [],
-          lastResult: null,
+      startRun: () =>
+        set(() => ({
+          isRunning: true,
+          ...resetRunState(true),
+        })),
+      stopRun: () =>
+        set((state) => {
+          if (!state.isRunning) {
+            return state
+          }
+
+          const elapsedMs = elapsedForState(state)
+          const entry = createLeaderboardEntry(state.modeId, state.stats, elapsedMs)
+
+          return {
+            isRunning: false,
+            runStartedAt: null,
+            elapsedMs,
+            leaderboard: addLeaderboardEntry(state.leaderboard, entry),
+          }
         }),
+      resetRun: () =>
+        set((state) => ({
+          ...resetRunState(state.isRunning),
+        })),
+      resetSettings: () =>
+        set({
+          settings: defaultSettings,
+        }),
+      resetStats: () =>
+        set((state) => ({
+          ...resetRunState(state.isRunning),
+        })),
     }),
     {
       name: 'dbd-skill-check-simulator-v1',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         modeId: state.modeId,
         settings: state.settings,
         stats: state.stats,
         history: state.history,
         lastResult: state.lastResult,
+        leaderboard: state.leaderboard,
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<GameStore> | undefined
+
+        return {
+          ...currentState,
+          ...persisted,
+          settings: {
+            ...defaultSettings,
+            ...persisted?.settings,
+          },
+          isRunning: true,
+          runStartedAt: Date.now(),
+          elapsedMs: 0,
+          leaderboard: persisted?.leaderboard ?? [],
+        }
+      },
     },
   ),
 )

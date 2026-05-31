@@ -1,4 +1,5 @@
 import { AttemptHistory } from './components/AttemptHistory'
+import { LeaderboardPanel } from './components/LeaderboardPanel'
 import { ModeSelector } from './components/ModeSelector'
 import { SettingsPanel } from './components/SettingsPanel'
 import { SkillCheckCanvas } from './components/SkillCheckCanvas'
@@ -16,14 +17,10 @@ function App() {
         </aside>
         <section className="grid min-w-0 content-start gap-4">
           <SkillCheckCanvas />
-          <div className="grid grid-cols-3 gap-2 border border-stone-800 bg-stone-950/70 p-3 text-center font-mono text-xs text-stone-500">
-            <span>RAF</span>
-            <span>CANVAS</span>
-            <span>WEB AUDIO</span>
-          </div>
         </section>
         <aside className="grid content-start gap-4">
           <StatsPanel />
+          <LeaderboardPanel />
           <AttemptHistory />
         </aside>
       </div>

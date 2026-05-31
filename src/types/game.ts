@@ -9,6 +9,12 @@ export interface HitZone {
   size: number
 }
 
+export interface SkillCheckLayout {
+  centerX: number
+  centerY: number
+  radius: number
+}
+
 export interface Keybind {
   code: string
   label: string
@@ -19,7 +25,8 @@ export interface GameSettings {
   zoneScale: number
   volume: number
   keybind: Keybind
-  visualAids: boolean
+  timingGuide: boolean
+  roundDurationSeconds: number
 }
 
 export interface ModeDefinition {
@@ -46,7 +53,7 @@ export interface AttemptConfig {
   speedTurnsPerSecond: number
   direction: RotationDirection
   jitterStrength: number
-  visualAids: boolean
+  timingGuide: boolean
   scoreMultiplier: number
 }
 
@@ -82,4 +89,15 @@ export interface GameStats {
   averageReactionMs: number | null
   averageAccuracy: number
   byMode: Record<ModeId, ModeStats>
+}
+
+export interface LeaderboardEntry {
+  id: string
+  modeId: ModeId
+  score: number
+  attempts: number
+  greats: number
+  successRate: number
+  elapsedMs: number
+  createdAt: number
 }

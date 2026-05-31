@@ -1,6 +1,6 @@
 import { SkillAudio } from '../audio/SkillAudio'
 import { createAttemptConfig } from '../modes/definitions'
-import type { AttemptConfig, AttemptResult, GameSettings, ModeId } from '../types/game'
+import type { AttemptConfig, AttemptResult, GameSettings, ModeId, SkillCheckLayout } from '../types/game'
 import { isAngleInZone, TAU, turnToRadians, wrapUnit } from '../utils/angle'
 import { evaluateAttempt } from './evaluateAttempt'
 
@@ -27,6 +27,8 @@ export class SkillCheckEngine {
   private attemptCounter = 0
   private currentAttempt: AttemptConfig | null = null
   private lastAttempt: AttemptConfig | null = null
+  private currentLayout: SkillCheckLayout | null = null
+  private lastLayout: SkillCheckLayout | null = null
   private resultFlash: ResultFlash | null = null
   private nextAttemptAt = 0
   private angle = 0
@@ -67,6 +69,12 @@ export class SkillCheckEngine {
   stop() {
     this.running = false
     cancelAnimationFrame(this.frameId)
+    this.currentAttempt = null
+    this.currentLayout = null
+    this.lastAttempt = null
+    this.lastLayout = null
+    this.resultFlash = null
+    this.draw(performance.now())
   }
 
   reset(timestamp = performance.now()) {
@@ -129,10 +137,13 @@ export class SkillCheckEngine {
     const settings = this.options.getSettings()
     const modeId = this.options.getModeId()
     const attempt = createAttemptConfig(modeId, settings, this.attemptCounter + 1, timestamp)
+    const layout = this.createRandomLayout()
 
     this.attemptCounter += 1
     this.currentAttempt = attempt
     this.lastAttempt = attempt
+    this.currentLayout = layout
+    this.lastLayout = layout
     this.angle = attempt.direction === 1 ? 0 : 0.995
     this.turnsElapsed = 0
     this.enteredSuccessAt = null
@@ -166,6 +177,7 @@ export class SkillCheckEngine {
       until: timestamp + 650,
     }
     this.currentAttempt = null
+    this.currentLayout = null
     this.lastAttempt = attempt
     this.nextAttemptAt = timestamp + 760
   }
@@ -203,29 +215,50 @@ export class SkillCheckEngine {
     this.context.setTransform(nextPixelRatio, 0, 0, nextPixelRatio, 0, 0)
   }
 
+  private createRandomLayout(): SkillCheckLayout {
+    const shortestSide = Math.min(this.width, this.height)
+    const radius = Math.max(78, Math.min(132, shortestSide * 0.24))
+    const padding = radius + 36
+    const horizontalRoom = Math.max(0, this.width - padding * 2)
+    const verticalRoom = Math.max(0, this.height - padding * 2)
+
+    if (horizontalRoom <= 0 || verticalRoom <= 0) {
+      return {
+        centerX: this.width / 2,
+        centerY: this.height / 2,
+        radius,
+      }
+    }
+
+    return {
+      centerX: padding + Math.random() * horizontalRoom,
+      centerY: padding + Math.random() * verticalRoom,
+      radius,
+    }
+  }
+
   private draw(timestamp: number) {
     const context = this.context
-    const centerX = this.width / 2
-    const centerY = this.height / 2
-    const radius = Math.min(this.width, this.height) * 0.34
     const activeAttempt = this.currentAttempt ?? this.lastAttempt
+    const activeLayout = this.currentLayout ?? this.lastLayout
     const needleAngle = this.currentAttempt ? this.getNeedleAngle(timestamp) : (this.resultFlash?.angle ?? this.angle)
 
     context.clearRect(0, 0, this.width, this.height)
-    this.drawBackdrop(context, centerX, centerY, radius, timestamp)
+    this.drawBackdrop(context, activeLayout, timestamp)
 
-    if (!activeAttempt) {
+    if (!activeAttempt || !activeLayout) {
       return
     }
 
     context.save()
-    context.translate(centerX, centerY)
+    context.translate(activeLayout.centerX, activeLayout.centerY)
+    const radius = activeLayout.radius
     this.drawTimingRing(context, radius)
     this.drawZone(context, activeAttempt.successZone.start, activeAttempt.successZone.size, radius, 'rgba(185, 212, 143, 0.46)', 18)
     this.drawZone(context, activeAttempt.greatZone.start, activeAttempt.greatZone.size, radius, 'rgba(255, 255, 244, 0.9)', 12)
 
-    if (activeAttempt.visualAids) {
-      this.drawVisualAids(context, activeAttempt, radius)
+    if (activeAttempt.timingGuide) {
+      this.drawTimingGuide(context, activeAttempt, radius)
     }
 
     this.drawNeedle(context, needleAngle, radius, activeAttempt)
@@ -236,11 +269,12 @@ export class SkillCheckEngine {
 
   private drawBackdrop(
     context: CanvasRenderingContext2D,
-    centerX: number,
-    centerY: number,
-    radius: number,
+    layout: SkillCheckLayout | null,
     timestamp: number,
   ) {
+    const centerX = layout?.centerX ?? this.width / 2
+    const centerY = layout?.centerY ?? this.height / 2
+    const radius = layout?.radius ?? Math.min(this.width, this.height) * 0.24
     const pulse = 0.5 + Math.sin(timestamp * 0.002) * 0.5
     const gradient = context.createRadialGradient(centerX, centerY, radius * 0.15, centerX, centerY, radius * 1.65)
 
@@ -306,7 +340,7 @@ export class SkillCheckEngine {
     context.stroke()
   }
 
-  private drawVisualAids(context: CanvasRenderingContext2D, attempt: AttemptConfig, radius: number) {
+  private drawTimingGuide(context: CanvasRenderingContext2D, attempt: AttemptConfig, radius: number) {
     const startAngle = turnToRadians(attempt.successZone.start)
     const endAngle = turnToRadians(attempt.successZone.start + attempt.successZone.size)
 

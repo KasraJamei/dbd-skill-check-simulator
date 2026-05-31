@@ -1,6 +1,7 @@
-import { BarChart3, Flame, Gauge, Target, Timer, Trophy } from 'lucide-react'
+import { BarChart3, Flame, Gauge, Play, RotateCcw, Square, Target, Timer, Trophy } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useGameStore } from '../store/gameStore'
-import { formatMs, formatPercent, formatSignedMs } from '../utils/format'
+import { formatClock, formatMs, formatPercent, formatSignedMs } from '../utils/format'
 
 function StatTile({ label, value }: { label: string; value: string | number }) {
   return (
@@ -16,7 +17,34 @@ export function StatsPanel() {
   const modeId = useGameStore((state) => state.modeId)
   const modeStats = stats.byMode[modeId]
   const lastResult = useGameStore((state) => state.lastResult)
+  const isRunning = useGameStore((state) => state.isRunning)
+  const runStartedAt = useGameStore((state) => state.runStartedAt)
+  const elapsedMs = useGameStore((state) => state.elapsedMs)
+  const roundDurationSeconds = useGameStore((state) => state.settings.roundDurationSeconds)
+  const startRun = useGameStore((state) => state.startRun)
+  const stopRun = useGameStore((state) => state.stopRun)
+  const resetRun = useGameStore((state) => state.resetRun)
+  const [now, setNow] = useState(0)
   const successRate = stats.attempts === 0 ? 0 : (stats.successes / stats.attempts) * 100
+  const currentNow = runStartedAt === null ? now : Math.max(now, runStartedAt)
+  const liveElapsedMs = elapsedMs + (isRunning && runStartedAt !== null ? currentNow - runStartedAt : 0)
+  const remainingMs = roundDurationSeconds * 1000 - liveElapsedMs
+
+  useEffect(() => {
+    if (!isRunning) {
+      return
+    }
+
+    const timerId = window.setInterval(() => setNow(Date.now()), 250)
+
+    return () => window.clearInterval(timerId)
+  }, [isRunning])
+
+  useEffect(() => {
+    if (isRunning && remainingMs <= 0) {
+      stopRun()
+    }
+  }, [isRunning, remainingMs, stopRun])
 
   return (
     <section className="border border-stone-800 bg-stone-950/78 p-4">
@@ -29,10 +57,36 @@ export function StatsPanel() {
       </div>
 
       <div className="grid grid-cols-2 gap-2">
+        <StatTile label="Time" value={formatClock(remainingMs)} />
         <StatTile label="Score" value={stats.score} />
         <StatTile label="Streak" value={stats.streak} />
         <StatTile label="Best" value={stats.bestStreak} />
         <StatTile label="Greats" value={stats.greats} />
+        <StatTile label="Attempts" value={stats.attempts} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+        <button
+          type="button"
+          onClick={isRunning ? stopRun : startRun}
+          className={`inline-flex h-10 items-center justify-center gap-2 border px-3 text-sm font-semibold transition ${
+            isRunning
+              ? 'border-red-500/70 bg-red-950/40 text-red-100 hover:border-red-300'
+              : 'border-lime-500/60 bg-lime-950/30 text-lime-100 hover:border-lime-300'
+          }`}
+        >
+          {isRunning ? <Square size={15} aria-hidden /> : <Play size={15} aria-hidden />}
+          {isRunning ? 'Stop' : 'Start'}
+        </button>
+        <button
+          type="button"
+          onClick={resetRun}
+          className="inline-flex h-10 w-10 items-center justify-center border border-stone-800 bg-stone-900 text-stone-400 transition hover:border-red-500/60 hover:text-red-200"
+          aria-label="Reset run"
+          title="Reset run"
+        >
+          <RotateCcw size={16} aria-hidden />
+        </button>
       </div>
 
       <div className="mt-4 grid gap-3 text-sm text-stone-300">
