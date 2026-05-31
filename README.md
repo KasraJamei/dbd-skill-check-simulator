@@ -21,7 +21,6 @@ The simulator is designed around low input latency: the canvas animation loop ow
 - Node.js 22+
 - npm 10+
 - Rust stable and Tauri system dependencies for desktop builds
-- GitHub CLI (`gh`) if you want to create and push the GitHub repository from the terminal
 
 Linux desktop build dependencies:
 
