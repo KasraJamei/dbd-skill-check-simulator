@@ -1,6 +1,6 @@
 [package]
 name = "dbd-skill-check-simulator"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dead by Daylight style skill check simulator"
 authors = ["Kasra Jamei"]
 edition = "2021"

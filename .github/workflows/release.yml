@@ -35,8 +35,10 @@ jobs:
       - name: Check release tag
         id: check
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if git rev-parse "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
+          if gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1; then
             echo "should_release=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_release=true" >> "$GITHUB_OUTPUT"
@@ -106,8 +108,10 @@ jobs:
 
       - name: Create version tag
         run: |
-          git tag "${{ needs.prepare-release.outputs.tag }}"
-          git push origin "${{ needs.prepare-release.outputs.tag }}"
+          if ! git rev-parse "${{ needs.prepare-release.outputs.tag }}" >/dev/null 2>&1; then
+            git tag "${{ needs.prepare-release.outputs.tag }}"
+            git push origin "${{ needs.prepare-release.outputs.tag }}"
+          fi
 
       - name: Download release artifacts
         uses: actions/download-artifact@v4
