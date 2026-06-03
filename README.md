@@ -1,4 +1,3 @@
-```markdown
 # DBD Skill Check Simulator
 
 A high-fidelity, timing-focused Dead by Daylight style skill check simulator built with Vite, React, TypeScript, TailwindCSS, Zustand, HTML5 Canvas, requestAnimationFrame, Web Audio API, and Tauri.
