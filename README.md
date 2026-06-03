@@ -4,6 +4,8 @@ A high-fidelity, performance-optimized timing simulator built with Vite, React, 
 
 This simulator is engineered specifically for ultra-low input latency. The canvas animation loop maintains absolute control over needle motion, keyboard inputs are captured via direct global hooks outside the React render lifecycle, and hit-detection scoring is calculated using high-resolution `performance.now()` microsecond timestamps.
 
+![Dead by Daylight Skill Check Simulator Preview](.github/assets/preview.png)
+
 ## Technical Architecture
 
 The codebase separates static configuration and metrics rendering from the core timing-critical systems:
