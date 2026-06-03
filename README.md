@@ -35,7 +35,6 @@ Skill checks spawn at random positions inside the play box. The hit zone is gene
 
 ### Linux Build Dependencies (Ubuntu/Debian)
 
-```bash
 sudo apt-get update
 sudo apt-get install -y \
   build-essential \
